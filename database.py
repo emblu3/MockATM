@@ -64,7 +64,7 @@ def read(user_account_number):
 
         if is_valid_account_number:
             f = open(user_db_path + str(user_account_number) + ".txt", "r")
-        else: #this necessary?
+        else: 
             f = open(user_db_path + user_account_number, "r")
 
     except FileNotFoundError:
