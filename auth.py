@@ -1,5 +1,7 @@
-import random 
-database = {}
+import random
+import validation 
+import database
+from getpass import getpass
 
 def init():
     print("Welcome to bankPHP")
@@ -13,89 +15,102 @@ def init():
         register()
 
     else:
-        print("You have selected invalid option")
+        print("You have selected an invalid option")
         init()
 
 
 def login():
-    print("--- LOGIN ---")
+    print("\n--- LOGIN ---")
 
-    accountNumberFromUser = int(input('What is your account number? \n'))
-    password = input('What is your password? \n')
+    account_number_from_user = int(input('What is your account number? \n'))
+    is_valid_account_number = validation.account_number_validation(account_number_from_user) 
+    
+    if is_valid_account_number:
 
-    for accountNumber, userDetails in database.items():
-        if(accountNumber == accountNumberFromUser):
-            if(userDetails[3] == password):
-                bank_operation(userDetails)
+        password = getpass("What is your password \n")
 
-    print('Invalid account or password')
-    init()
+        user = database.authenticated_user(account_number_from_user, password)
+
+        if user:
+            bank_operation(user, account_number_from_user)
+
+        print('Invalid account or password')
+        login()
+
+    else:
+        print("Account Number Invalid: check that you have up to 10 digits and only integers.")
+        init()
+    
+    
 
 
 def register():
-    print("--- REGISTER ---")
+    print("\n--- REGISTER ---")
 
     email = input("What is your email address? \n")
     first_name = input("What is your first name? \n")
     last_name = input("What is your last name? \n")
-    password = input("Create a password for yourself \n")
+    password = getpass("Create a password for yourself \n")
 
     account_number = generate_account_number()
-    balance = 0
 
-    database[account_number] = [first_name, last_name, email, password, balance]
+    is_user_created = database.create(account_number, first_name, last_name, email, password)
 
-    print("Your account Has been created! \n")
-    print("Your account number is: %d \n" % account_number)
-    print("Make sure you keep it safe. \n")
+    if is_user_created:
 
-    login()
+        print("Your Account Has been created")
+        print(" == ==== ====== ===== ===")
+        print("Your account number is: %d" % account_number)
+        print("Make sure you keep it safe")
+        print(" == ==== ====== ===== ===")
+
+        login()
+
+    else:
+        print("Something went wrong, please try again")
+        register()
 
 
-def bank_operation(user):
+def bank_operation(user, account_number_from_user):
+    database.logged('on', account_number_from_user)
+
     print("Welcome %s %s " % (user[0], user[1]))
 
     selected_option = int(input("What would you like to do? (1) Deposit (2) Withdraw (3) Logout (4) Exit \n"))
 
     if selected_option == 1:
-        deposit_operation(user)
+        deposit_operation(user, account_number_from_user)
 
     elif selected_option == 2:
-        withdrawal_operation(user)
+        withdrawal_operation(user, account_number_from_user)
 
     elif selected_option == 3:
-        logout()
+        logout(account_number_from_user)
 
     elif selected_option == 4:
+        database.logged('off', account_number_from_user)
         exit()
 
     else:
         print("Invalid option selected")
-        bank_operation(user)
+        bank_operation(user, account_number_from_user)
 
 
-def withdrawal_operation(user):
+def withdrawal_operation(user, account_number_from_user):
     print("You selected: Withdrawal")
     print('Your current balance is %s' % user[4])
-    withdraw = int(input('How much do you want to withdraw? \n'))
-    if user[4] > withdraw:
-        print("Here's your cash: $%s \n" % withdraw)
-        user[4] = user[4] - withdraw
-        print("Your new balance is %s" % user[4])
-    else:
-        print("You don't have enough money to withdraw that amount. \n")
+    database.update_withdrawal(user, account_number_from_user)
     
-    bank_operation(user)
+    bank_operation(user, account_number_from_user)
 
 
-def deposit_operation(user):
+def deposit_operation(user, account_number_from_user):
     print("You selected: Deposit")
     print('Your current balance is %s' % user[4])
-    deposit = int(input('How much do you want to deposit? \n'))
-    user[4] = user[4] + deposit
-    print('Your new balance is %s' % user[4])
+    database.update_deposit(user, account_number_from_user)
     
-    bank_operation(user)
+    
+    bank_operation(user, account_number_from_user)
 
 
 def generate_account_number():
@@ -103,7 +118,8 @@ def generate_account_number():
 
 
 
-def logout():
+def logout(account_number_from_user):
+    database.logged('off', account_number_from_user)
     login()
 
 
